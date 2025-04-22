@@ -2,7 +2,7 @@ from aiogram import F
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 
-def create_button(smiles_mitrix):
+def create_game_keyboard(smiles_mitrix):
     print(smiles_mitrix)
     buttons_box = []
 
