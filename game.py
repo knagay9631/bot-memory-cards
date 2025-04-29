@@ -8,7 +8,6 @@ from constants import (
     CARD_OPEN, 
     USER_CARDS_COORD,
     WIN, 
-    CLOSED_CARDS,
     LUCKI_NOT_WIN
 )
 
@@ -27,39 +26,45 @@ with open("xc.txt", "r") as f:
 TOKEN = data
 dp = Dispatcher(storage=MemoryStorage())
 
-line_1 = ["😊", "😫", "💋", "🦹🏼‍♂"]
-line_2 = ["😎", "😇", "🥳", "🤣"]
-line_3 = ["😊", "😫", "💋", "🦹🏼‍♂"]
-line_4 = ["😎", "😇", "🥳", "🤣"]
-random.shuffle(line_1)
-random.shuffle(line_2)
-random.shuffle(line_3)
-random.shuffle(line_4)
-cards = [ line_1, line_2, line_3, line_4 ]
-random.shuffle(cards)
-
 
 @dp.message(CommandStart())
 async def command_start_handler(message:Message, state:FSMContext) -> None:
-    buttons = buttons_factory.create_game_keyboard(CLOSED_CARDS)
+    line_1 = ["😊", "😫", "💋", "🦹🏼‍♂"]
+    line_2 = ["😎", "😇", "🥳", "🤣"]
+    line_3 = ["😊", "😫", "💋", "🦹🏼‍♂"]
+    line_4 = ["😎", "😇", "🥳", "🤣"]
+    random.shuffle(line_1)
+    random.shuffle(line_2)
+    random.shuffle(line_3)
+    random.shuffle(line_4)
+    cards_init = [ line_1, line_2, line_3, line_4 ]
+    random.shuffle(cards_init)
+
+    close_cards_init = [
+    ["00", "01", "02", "03"],
+    ["10", "11", "12", "13"],
+    ["20", "21", "22", "23"],
+    ["30", "31", "32", "33"]
+    ]
+    buttons = buttons_factory.create_game_keyboard(close_cards_init)
     await state.clear()
-    await state.set_data({"closed_cards": CLOSED_CARDS, "cards": cards, "user_cards_coord": USER_CARDS_COORD})
+    await state.set_data({"close_cards_init": close_cards_init, "cards": cards_init, "user_cards_coord": USER_CARDS_COORD})
     await message.answer(f"Hello {message.from_user.full_name} :)", reply_markup=buttons)
 
 
 @dp.message()
 async def echo_handler(message:Message, state:FSMContext):
     data = await state.get_data()
-    closed_cards = data["closed_cards"]
+    close_cards_init = data["close_cards_init"]
     cards = data["cards"]
     user_cards_coord = data["user_cards_coord"]
     output_message = ""
 
-    if closed_cards == cards:
+    if close_cards_init == cards:
         return
 
     isCardFounded = False
-    for line in closed_cards:
+    for line in close_cards_init:
         if message.text in line:
             isCardFounded = True
     
@@ -72,26 +77,26 @@ async def echo_handler(message:Message, state:FSMContext):
         return
     
     if len(user_cards_coord) > 1:
-        if closed_cards[user_cards_coord[0][0]][user_cards_coord[0][1]] == closed_cards[user_cards_coord[1][0]][user_cards_coord[1][1]]:
+        if close_cards_init[user_cards_coord[0][0]][user_cards_coord[0][1]] == close_cards_init[user_cards_coord[1][0]][user_cards_coord[1][1]]:
             user_cards_coord = []
             output_message = LUCKI_NOT_WIN
         else:
-            closed_cards[user_cards_coord[0][0]][user_cards_coord[0][1]] = str(user_cards_coord[0][0]) + str(user_cards_coord[0][1])
-            closed_cards[user_cards_coord[1][0]][user_cards_coord[1][1]] = str(user_cards_coord[1][0]) + str(user_cards_coord[1][1])
+            close_cards_init[user_cards_coord[0][0]][user_cards_coord[0][1]] = str(user_cards_coord[0][0]) + str(user_cards_coord[0][1])
+            close_cards_init[user_cards_coord[1][0]][user_cards_coord[1][1]] = str(user_cards_coord[1][0]) + str(user_cards_coord[1][1])
             user_cards_coord = []
     
     first_card_x = int(coord[0])
     first_card_y = int(coord[1])
     user_cards_coord.append([first_card_x, first_card_y])
-    closed_cards[first_card_x][first_card_y] = cards[first_card_x][first_card_y]
+    close_cards_init[first_card_x][first_card_y] = cards[first_card_x][first_card_y]
     
-    buttons = buttons_factory.create_game_keyboard(closed_cards)
+    buttons = buttons_factory.create_game_keyboard(close_cards_init)
     output_message = CARD_OPEN
 
-    if closed_cards == cards:
+    if close_cards_init == cards:
         output_message = WIN
 
-    await state.set_data({"closed_cards": closed_cards, "cards": cards, "user_cards_coord": user_cards_coord})
+    await state.set_data({"close_cards_init": close_cards_init, "cards": cards, "user_cards_coord": user_cards_coord})
     await message.answer(output_message, reply_markup=buttons)
 
 async def main() -> None:
